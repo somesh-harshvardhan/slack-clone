@@ -12,13 +12,38 @@ import React, { useState } from "react";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import { SignInFlow } from "../types";
+import { TriangleAlert } from "lucide-react";
+import { useAuthActions } from "@convex-dev/auth/react";
 interface SingUpCardProps {
   setState: (state: SignInFlow) => void;
 }
 const SignUpCard = ({ setState }: SingUpCardProps) => {
+  const { signIn } = useAuthActions();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
+
+  const onProvider = (value: "github" | "google") => {
+    setPending(true);
+    signIn(value).finally(() => setPending(false));
+  };
+
+  const onPasswordSignUp = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+    }
+    setPending(true);
+    signIn("password", { email, password, name, flow: "signUp" })
+      .catch(() => {
+        setError("Something went wrong");
+      })
+      .finally(() => setPending(false));
+  };
   return (
     <Card className=" w-full h-full p-8">
       <CardHeader className=" px-0 pt-0">
@@ -27,11 +52,24 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
           Use your email or another service to continue
         </CardDescription>
       </CardHeader>
-
+      {!!error && (
+        <div className=" bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
+          <TriangleAlert className=" size-4" />
+          <p>{error}</p>
+        </div>
+      )}
       <CardContent className=" space-y-5 px-0 pb-0">
-        <form className=" space-y-2.5">
+        <form onSubmit={onPasswordSignUp} className=" space-y-2.5">
           <Input
-            disabled={false}
+            disabled={pending}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Full name"
+            type="text"
+            required
+          />
+          <Input
+            disabled={pending}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
@@ -39,7 +77,7 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
             required
           />
           <Input
-            disabled={false}
+            disabled={pending}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
@@ -47,7 +85,7 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
             required
           />
           <Input
-            disabled={false}
+            disabled={pending}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm password"
@@ -58,7 +96,7 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
             type="submit"
             className=" w-full "
             size={"lg"}
-            disabled={false}
+            disabled={pending}
           >
             Continue
           </Button>
@@ -66,8 +104,8 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
         <Separator />
         <div className=" flex flex-col gap-y-2.5">
           <Button
-            disabled={false}
-            onClick={() => {}}
+            disabled={pending}
+            onClick={() => onProvider("google")}
             variant={"outline"}
             size={"lg"}
             className=" w-full relative"
@@ -78,14 +116,14 @@ const SignUpCard = ({ setState }: SingUpCardProps) => {
         </div>
         <div className=" flex flex-col gap-y-2.5">
           <Button
-            disabled={false}
-            onClick={() => {}}
+            disabled={pending}
+            onClick={() => onProvider("github")}
             variant={"outline"}
             size={"lg"}
             className=" w-full relative"
           >
             <FaGithub className=" size-5 absolute top-3 left-2.5" />
-            Continue with Google
+            Continue with Github
           </Button>
         </div>
         <p className=" text-xs text-muted-foreground ">
